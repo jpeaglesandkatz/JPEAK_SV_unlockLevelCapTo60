@@ -9,6 +9,22 @@
 *.user
 *.userosscache
 *.sln.docstates
+[Ll]ib/
+[Ll]ibs/
+0Harmony.dll
+Assembly-CSharp.dll
+Assembly-CSharp_public.dll
+Assembly-CSharp_public.hash
+BepInEx.dll
+UnityEngine.dll
+UnityEngine.AudioModule.dll
+UnityEngine.CoreModule.dll
+UnityEngine.InputLegacyModule.dll
+UnityEngine.PhysicsModule.dll
+UnityEngine.SharedInternalsModule.dll
+UnityEngine.TextRenderingModule.dll
+UnityEngine.UI.dll
+UnityEngine.UIModule.dll
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
