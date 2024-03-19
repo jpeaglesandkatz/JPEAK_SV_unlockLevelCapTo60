@@ -59,7 +59,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="MonoBehaviours\JPEAK_SV_unlockLevelCapTo60Component.cs" />
     <Compile Include="JPEAK_SV_unlockLevelCapTo60Plugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
