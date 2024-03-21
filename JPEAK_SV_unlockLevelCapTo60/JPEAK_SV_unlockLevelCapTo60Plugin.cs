@@ -140,22 +140,19 @@ namespace JPEAK_SV_unlockLevelCapTo60
 			if (Random.Range(1, 101) <= num5)
 			{
 				__instance.spawnEnemyTime = (float)(180 - num6);
-				__instance.spawnEnemyPlusChance = 0;
+				__instance.spawnEnemyPlusChance = 1;
 				if (__instance.spawnEnemyTime < 100f)
 				{
 					__instance.spawnEnemyTime = 100f;
 				}
-				//MethodInfo CreateEnemy = AccessTools.Method(typeof(GameManager), "CreateEnemy");
-				//GameManager.instance.StartCoroutine(
-				//		(System.Collections.IEnumerator)CreateEnemy.Invoke(GameManager.instance, new object[] { spawnInterval, num })
-				//		);
 
-				__instance.StartCoroutine(__instance.CreateEnemyRoutine(spawnInterval, num +2));
-                Debug.LogWarning($"PluginName: {PluginName}, Created spawnEnemy" + spawnInterval.ToString() + " " + num+2.ToString());
+				num = +3;
+				__instance.StartCoroutine(__instance.CreateEnemyRoutine(spawnInterval, num));
+                Debug.LogWarning($"PluginName: {PluginName}, Enhanced Create Enemy {bounty}, {num3}, {num4}, {num5}, {num6}, {spawnInterval}, {num}");
                 return false;
 			}
 			__instance.spawnEnemyTime = 30f;
-			__instance.spawnEnemyPlusChance += 5;
+			__instance.spawnEnemyPlusChance += 15;
 			if (PChar.GetRepRank(__instance.currSector.factionControl) > -3 && __instance.spawnEnemyPlusChance > CfgMaxLevel.Value + 5 - num4)
 			{
 				__instance.spawnEnemyPlusChance = CfgMaxLevel.Value + 20 - num4;
