@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net471</TargetFramework>
+		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+		<Configurations>Debug;Release;Release2</Configurations>
+	</PropertyGroup>
+	<ItemGroup>
+	  <Compile Remove="Properties\**" />
+	  <EmbeddedResource Remove="Properties\**" />
+	  <None Remove="Properties\**" />
+	</ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Aze.Publicise.MSBuild.Task" Version="1.1.0">
+		  <PrivateAssets>all</PrivateAssets>
+		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="PLib" Version="4.14.1">
+			<Private>false</Private>
+		</PackageReference>
+	</ItemGroup>
+	<ItemGroup>
+	  <Reference Include="System.Net.Http" />
+	</ItemGroup>
+</Project>
