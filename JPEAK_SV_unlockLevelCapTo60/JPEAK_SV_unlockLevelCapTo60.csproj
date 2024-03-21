@@ -34,9 +34,6 @@
     <Reference Include="0Harmony">
       <HintPath>..\..\jpeaglesandkatz\jpeak_sv_stashall\lib\0Harmony.dll</HintPath>
     </Reference>
-    <Reference Include="Assembly-CSharp">
-      <HintPath>..\..\jpeaglesandkatz\jpeak_sv_stashall\lib\Assembly-CSharp.dll</HintPath>
-    </Reference>
     <Reference Include="Assembly-CSharp_publicized">
       <HintPath>..\..\jpeaglesandkatz\jpeak_sv_stashall\lib\Assembly-CSharp_publicized.dll</HintPath>
     </Reference>
