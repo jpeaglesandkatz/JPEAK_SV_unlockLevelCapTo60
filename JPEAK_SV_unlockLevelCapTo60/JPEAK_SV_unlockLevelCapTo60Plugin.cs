@@ -150,8 +150,9 @@ namespace JPEAK_SV_unlockLevelCapTo60
 				//		(System.Collections.IEnumerator)CreateEnemy.Invoke(GameManager.instance, new object[] { spawnInterval, num })
 				//		);
 
-				__instance.StartCoroutine(__instance.CreateEnemyRoutine(spawnInterval, num));
-				return false;
+				__instance.StartCoroutine(__instance.CreateEnemyRoutine(spawnInterval, num +2));
+                Debug.LogWarning($"PluginName: {PluginName}, Created spawnEnemy" + spawnInterval.ToString() + " " + num+2.ToString());
+                return false;
 			}
 			__instance.spawnEnemyTime = 30f;
 			__instance.spawnEnemyPlusChance += 5;
