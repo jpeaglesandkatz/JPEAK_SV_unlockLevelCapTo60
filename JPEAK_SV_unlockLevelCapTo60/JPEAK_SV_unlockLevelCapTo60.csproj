@@ -11,7 +11,7 @@
 
 	<!-- Build Properties -->
 	<PropertyGroup>
-		<TargetFramework>net471</TargetFramework>
+		<TargetFramework>net472</TargetFramework>
 		<Configurations>Debug;Release</Configurations>
 		<AssemblyName>JPEAK_SV_unlockLevelCapTo60</AssemblyName>
 		<RootNamespace>JPEAK_SV_unlockLevelCapTo60</RootNamespace>
@@ -30,7 +30,18 @@
 	</PropertyGroup>
 	
 	<ItemGroup>
-		<ProjectReference Include="..\UtilLibs\UtilLibs.csproj" />
+	  <Compile Remove="Properties\**" />
+	  <EmbeddedResource Remove="Properties\**" />
+	  <None Remove="Properties\**" />
+	</ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Aze.Publicise.MSBuild.Task" Version="1.1.0">
+		  <PrivateAssets>all</PrivateAssets>
+		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+	</ItemGroup>
+	<ItemGroup>
+	  <Reference Include="System.Net.Http" />
 	</ItemGroup>
 	
 	<ItemGroup>
