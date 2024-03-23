@@ -172,6 +172,7 @@ namespace JPEAK_SV_unlockLevelCapTo60
             SpaceShip aIss = shipobj.GetComponent<SpaceShip>();
             shipobj.gameObject.SetActive(false);
             aIControl.SearchForEnemies();
+            aIControl.Char.pilotLevel = PChar.Char.level + 5;
             aIss.ApplyFleetBonuses();
             aIss.ApplyPerks(1);
             aIss.armorMod = 5;
