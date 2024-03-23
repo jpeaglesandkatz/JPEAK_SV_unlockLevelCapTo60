@@ -3,10 +3,9 @@ using UnityEngine;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
-using HarmonyLib;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using UnityEngine;
+using System;
 
 namespace JPEAK_SV_unlockLevelCapTo60
 {
@@ -119,7 +118,7 @@ namespace JPEAK_SV_unlockLevelCapTo60
                     }
                     num2 += __instance.currSector.GetHideoutQuantity(HideoutType.Marauder, true) * 5;
                 }
-                if (num == -1 && Random.Range(1, 101) <= num2)
+                if (num == -1 && UnityEngine.Random.Range(1, 101) <= num2)
                 {
                     num = 0;
                 }
@@ -139,10 +138,10 @@ namespace JPEAK_SV_unlockLevelCapTo60
             int num6 = num5 - CfgMaxLevel.Value;
             num5 += __instance.spawnEnemyPlusChance;
             num5 += ((bounty > 0) ? bounty : (bounty * 2));
-            if (Random.Range(1, 101) <= num5)
+            if (UnityEngine.Random.Range(1, 101) <= num5)
             {
                 __instance.spawnEnemyTime = (float)(180 - num6);
-                __instance.spawnEnemyPlusChance = 1;
+                __instance.spawnEnemyPlusChance = 3;
                 if (__instance.spawnEnemyTime < 100f)
                 {
                     __instance.spawnEnemyTime = 100f;
@@ -163,183 +162,31 @@ namespace JPEAK_SV_unlockLevelCapTo60
             return false;
         }
 
-            [HarmonyPatch(typeof(GameManager), "CreateEnemyRoutine")]
-            static System.Collections.Generic.IEnumerable<YieldInstruction> CreateEnemyRoutine(float spawnInterval, int factionIndex, GameManager __instance)
+        [HarmonyPatch(typeof(GameManager), "SpawnShip")]
+        [HarmonyPostfix]
+        public static Transform SpawnShip_post(Transform rettype, ref Transform __result)
         {
-            int currSectorIndex = GameData.data.currentSectorIndex;
-            __instance.performingSpawnFleet = true;
-            __instance.cancelSpawnFleet = false;
-            int bounty = __instance.Player.GetComponent<SpaceShip>().stats.bounty;
-            bounty += GameData.data.difficulty * 4;
-            int repValue = PChar.GetRep(factionIndex) * -1;
-            int strengthBoost = bounty + PChar.GetRep(factionIndex) * -1 / 1500;
-            if (strengthBoost < 0)
-            {
-                strengthBoost = 0;
-            }
-            if (!__instance.TargetInSafeZone(__instance.Player.transform, -1))
-            {
-                Debug.Log("Creating enemy! strengthBoost: " + strengthBoost);
-                InfoPanelControl.inst.ShowWarning(Lang.Get(6, 100), 7, strengthBoost > 5);
-                yield return new WaitForSeconds(2f);
-                if (GameData.data.currentSectorIndex != currSectorIndex || __instance.cancelSpawnFleet)
-                {
-                    __instance.performingSpawnFleet = false;
-                    __instance.cancelSpawnFleet = false;
-                    __instance.spawnEnemyTime += 120f;
-                    Debug.LogWarning($"PluginName: {PluginName}, Cancel spawn");
-                    yield break;
-                }
-                int bonusLevel = strengthBoost / 6;
-                float rotationY = (float)UnityEngine.Random.Range(0, 359);
-                bool allowNonCombatRoleShips = true;
-                if (__instance.currSector.level >= 52)
-                {
-                    allowNonCombatRoleShips = false;
-                }
-                AICharacter aiChar = new AICharacter();
-                aiChar.level = __instance.RandomizeShipLevel(0f, bonusLevel);
-                aiChar.factionIndex = factionIndex;
-                aiChar.rotationY = rotationY;
-                aiChar.SetBehaviour(0, false);
-                if (UnityEngine.Random.Range(1, 101) <= (strengthBoost - 10) * 3)
-                {
-                    aiChar.rank = 3;
-                }
-                else if (UnityEngine.Random.Range(1, 101) <= strengthBoost * 12)
-                {
-                    aiChar.rank = 2;
-                }
-                Vector2 coordenatesNearPlayer = __instance.GetCoordenatesNearPlayer();
-                Vector3 location = new Vector3(coordenatesNearPlayer.x, 0f, coordenatesNearPlayer.y);
-                aiChar.posX = location.x;
-                aiChar.posZ = location.z;
-                int qntExtras = (int)(((float)bounty + Mathf.Sqrt((float)repValue * 0.003f) + (float)repValue * 0.0001f) / 2f);
-                int waveMode = Random.Range(0, 3);
-                int minSize = Mathf.Clamp((int)((float)strengthBoost * 0.1f), 2, 5);
-                int maxSize = Mathf.Clamp((int)((float)strengthBoost * 0.15f), 3, 6);
-                if (waveMode == 0)
-                {
-                    qntExtras = (int)((float)qntExtras * 0.6f);
-                }
-                else if (waveMode == 1)
-                {
-                    minSize = 5;
-                    maxSize = 8;
-                }
-                else
-                {
-                    qntExtras = (int)((float)qntExtras * 0.3f);
-                    if (aiChar.level > 15 && minSize < 4)
-                    {
-                        minSize = 6;
-                        maxSize = 10;
-                    }
-                }
-                if (factionIndex > 0)
-                {
-                    ShipModelData randomModel = ShipDB.GetRandomModel(minSize, maxSize, factionIndex, 99, false, true, allowNonCombatRoleShips);
-                    aiChar.shipData = new SpaceShipData
-                    {
-                        shipModelID = randomModel.id
-                    };
-                }
-                yield return null;
-                bool flag = factionIndex > 0 && aiChar.level > 20 && aiChar.behavior.role != 1;
-                __instance.SpawnShip(location, true, factionIndex, aiChar, true, flag);
-                yield return new WaitForSeconds(spawnInterval);
-                if (qntExtras > 0)
-                {
-                    Debug.LogWarning($"PluginName: {PluginName}, Spawned Ships.... did you see them?");
-                    if (waveMode == 0)
-                    {
-                        minSize = Mathf.Clamp((int)((float)strengthBoost * 0.05f), 1, 2);
-                        maxSize = Mathf.Clamp((int)((float)strengthBoost * 0.06f), 2, 4);
-                    }
-                    else if (waveMode == 1)
-                    {
-                        minSize = 1;
-                        maxSize = Mathf.Clamp((int)((float)strengthBoost * 0.04f), 1, 2);
-                    }
-                    else
-                    {
-                        minSize = Mathf.Clamp((int)((float)strengthBoost * 0.06f), 3, 5);
-                        maxSize = Mathf.Clamp((int)((float)strengthBoost * 0.07f), 3, 6);
-                    }
-                    int num2;
-                    for (int i = 0; i < qntExtras; i = num2 + 1)
-                    {
-                        if (GameData.data.currentSectorIndex != currSectorIndex || __instance.cancelSpawnFleet)
-                        {
-                            __instance.performingSpawnFleet = false;
-                            __instance.cancelSpawnFleet = false;
-                            __instance.spawnEnemyTime += 120f;
-                            yield break;
-                        }
-                        aiChar = new AICharacter();
-                        aiChar.level = __instance.RandomizeShipLevel(0f, bonusLevel - 2);
-                        aiChar.factionIndex = factionIndex;
-                        aiChar.rotationY = rotationY;
-                        location += new Vector3((float)Random.Range(-50 - qntExtras, 50 + qntExtras), 0f, (float)Random.Range(-50 - qntExtras, 50 + qntExtras));
-                        aiChar.posX = location.x;
-                        aiChar.posZ = location.z;
-                        int num = 0;
-                        if (factionIndex > 0 && Random.Range(1, 11) <= 3)
-                        {
-                            num = 1;
-                        }
-                        aiChar.SetBehaviour(num, false);
-                        flag = (factionIndex > 0 && aiChar.level > 20 && aiChar.behavior.role != 1);
-                        int maxShipClass;
-                        if (aiChar.behavior.role == 1)
-                        {
-                            maxShipClass = 3;
-                        }
-                        else
-                        {
-                            maxShipClass = maxSize;
-                        }
-                        if (factionIndex == 0)
-                        {
-                            aiChar.AIType = 2;
-                        }
-                        else
-                        {
-                            aiChar.AIType = 3;
-                        }
-                        if (Random.Range(1, 101) <= (strengthBoost - 10) * 3)
-                        {
-                            aiChar.rank = 2;
-                        }
-                        else if (Random.Range(1, 101) <= strengthBoost * 10)
-                        {
-                            aiChar.rank = 1;
-                        }
-                        if (factionIndex > 0)
-                        {
-                            ShipModelData randomModel2 = ShipDB.GetRandomModel(minSize, maxShipClass, factionIndex, 99, false, num == 0, allowNonCombatRoleShips);
-                            aiChar.shipData = new SpaceShipData
-                            {
-                                shipModelID = randomModel2.id
-                            };
-                        }
-                        __instance.SpawnShip(location, aiChar.behavior.role != 1, factionIndex, aiChar, true, flag && aiChar.behavior.role == 0);
-                        
-                        yield return new WaitForSeconds(spawnInterval);
-                        num2 = i;
-                    }
-                    Debug.LogWarning($"PluginName: {PluginName}, Spawned Ships.... did you see them?");
-                }
-                __instance.spawnEnemyTime += (float)(strengthBoost * 12);
-                __instance.shortenFleetCooldown = 180f;
-                PChar.ShowTutorial(1, true);
-                aiChar = null;
-            }
-            __instance.performingSpawnFleet = false;
-            yield break;
+            Transform shipobj = __result;
+            
+            AIControl aIControl = shipobj.GetComponent<AIControl>();
+            SpaceShip aIss = shipobj.GetComponent<SpaceShip>();
+            shipobj.gameObject.SetActive(false);
+            aIControl.SearchForEnemies();
+            aIss.ApplyFleetBonuses();
+            aIss.ApplyPerks(1);
+            aIss.armorMod = 5;
+            aIss.DamageMod(1);
+            aIss.DamageResist(5);
+            aIss.dmgBonus = 2;
+            
+                       
+            shipobj.gameObject.SetActive(true);
+            rettype = shipobj;
+            Debug.LogWarning($"PluginName: {PluginName}, Postfixed enemy! {aIss.armorMod}, {aIss.AIControl}, {aIss.armor}");
+            return __result = rettype;
            
-        }
+        }       
 
-        }
+    }
     }
 
