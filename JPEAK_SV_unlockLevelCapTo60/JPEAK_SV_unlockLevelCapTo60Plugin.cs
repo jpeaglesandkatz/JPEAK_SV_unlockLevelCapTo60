@@ -6,53 +6,57 @@ using BepInEx.Logging;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System;
+using System.Collections.Generic;
+using System.Runtime.Remoting.Contexts;
 
 namespace JPEAK_SV_unlockLevelCapTo60
 {
 
-	[BepInPlugin(MyGUID, PluginName, VersionString)]
-	public class JPEAK_SV_unlockLevelCapTo60Plugin : BaseUnityPlugin
-	{
+    [BepInPlugin(MyGUID, PluginName, VersionString)]
+    public class JPEAK_SV_unlockLevelCapTo60Plugin : BaseUnityPlugin
+    {
 
-		private const string MyGUID = "com.jpb.JPEAK_SV_unlockLevelCapTo60";
-		private const string PluginName = "JPEAK_SV_unlockLevelCapTo60";
-		private const string VersionString = "1.0.0";
+        private const string MyGUID = "com.jpb.JPEAK_SV_unlockLevelCapTo60";
+        private const string PluginName = "JPEAK_SV_unlockLevelCapTo60";
+        private const string VersionString = "1.0.0";
 
-		public static string CfgMaxLevelKey = "Max Level Cap";
-
-
-		public static ConfigEntry<int> CfgMaxLevel;
+        public static string CfgMaxLevelKey = "Max Level Cap";
 
 
-		private static readonly Harmony Harmony = new Harmony(MyGUID);
-		public static ManualLogSource Log = new ManualLogSource(PluginName);
-
-		private void Awake()
-		{
-
-			CfgMaxLevel = Config.Bind("Max level",
-				CfgMaxLevelKey,
-				60,
-				new ConfigDescription("Set Max level Cap",
-					new AcceptableValueRange<int>(50, 100)));
-
-			// Apply all of our patches
-			Logger.LogInfo($"PluginName: {PluginName}, VersionString: {VersionString} is loading...");
-			Harmony.CreateAndPatchAll(typeof(JPEAK_SV_unlockLevelCapTo60Plugin), null);
-			Logger.LogInfo($"PluginName: {PluginName}, VersionString: {VersionString} is loaded.");
-
-			Log = Logger;
-		}
+        public static ConfigEntry<int> CfgMaxLevel;
 
 
-		[HarmonyPatch(typeof(PChar), "UpdateChar")]
-		[HarmonyPrefix]
-		static bool UpdateCharprefix(ref int ___maxLevel, ref int __state)
-		{
-			___maxLevel = CfgMaxLevel.Value;
-			return true;
+        private static readonly Harmony Harmony = new Harmony(MyGUID);
+        public static ManualLogSource Log = new ManualLogSource(PluginName);
 
-		}
+        private void Awake()
+        {
+
+            CfgMaxLevel = Config.Bind("Max level",
+                CfgMaxLevelKey,
+                60,
+                new ConfigDescription("Set Max level Cap",
+                    new AcceptableValueRange<int>(50, 100)));
+
+            // Apply all of our patches
+            Logger.LogInfo($"PluginName: {PluginName}, VersionString: {VersionString} is loading...");
+            Harmony.CreateAndPatchAll(typeof(JPEAK_SV_unlockLevelCapTo60Plugin), null);
+            Harmony.CreateAndPatchAll(typeof(AIpatches));
+
+            Logger.LogInfo($"PluginName: {PluginName}, VersionString: {VersionString} is loaded.");
+
+            Log = Logger;
+        }
+
+
+        [HarmonyPatch(typeof(PChar), "UpdateChar")]
+        [HarmonyPrefix]
+        static bool UpdateCharprefix(ref int ___maxLevel, ref int __state)
+        {
+            ___maxLevel = CfgMaxLevel.Value;
+            return true;
+
+        }
 
         [HarmonyPatch(typeof(GameManager), "CreateEnemy")]
         [HarmonyPrefix]
@@ -138,16 +142,16 @@ namespace JPEAK_SV_unlockLevelCapTo60
             int num6 = num5 - CfgMaxLevel.Value;
             num5 += __instance.spawnEnemyPlusChance;
             num5 += ((bounty > 0) ? bounty : (bounty * 2));
-            if (UnityEngine.Random.Range(1, 101) <= num5)
+            if (UnityEngine.Random.Range(1, 140) <= num5)
             {
                 __instance.spawnEnemyTime = (float)(180 - num6);
-                __instance.spawnEnemyPlusChance = 3;
-                if (__instance.spawnEnemyTime < 100f)
+                __instance.spawnEnemyPlusChance = 2;
+                if (__instance.spawnEnemyTime < 50f)
                 {
-                    __instance.spawnEnemyTime = 100f;
+                    __instance.spawnEnemyTime = 50f;
                 }
 
-                num = +3;
+                num = +2;
                 __instance.StartCoroutine(__instance.CreateEnemyRoutine(spawnInterval, num));
                 Debug.LogWarning($"PluginName: {PluginName}, Enhanced Create Enemy {bounty}, {num3}, {num4}, {num5}, {num6}, {spawnInterval}, {num}");
                 return false;
@@ -167,27 +171,91 @@ namespace JPEAK_SV_unlockLevelCapTo60
         public static Transform SpawnShip_post(Transform rettype, ref Transform __result)
         {
             Transform shipobj = __result;
-            
+
             AIControl aIControl = shipobj.GetComponent<AIControl>();
             SpaceShip aIss = shipobj.GetComponent<SpaceShip>();
             shipobj.gameObject.SetActive(false);
-            aIControl.SearchForEnemies();
+
             aIControl.Char.pilotLevel = PChar.Char.level + 5;
             aIss.ApplyFleetBonuses();
             aIss.ApplyPerks(1);
-            aIss.armorMod = 5;
-            aIss.DamageMod(1);
-            aIss.DamageResist(5);
-            aIss.dmgBonus = 2;
-            
-                       
+            aIss.armorMod = 4f + UnityEngine.Random.Range(0f, 3f);
+            aIss.DamageMod(1 + UnityEngine.Random.Range(0, 2));
+            aIss.DamageResist(3 + UnityEngine.Random.Range(1, 3));
+            aIss.dmgBonus = UnityEngine.Random.Range(0, 2);
+            aIss.AIControl.Update();
             shipobj.gameObject.SetActive(true);
-            rettype = shipobj;
+            aIControl.SearchForEnemies();
+            //rettype = shipobj;
             Debug.LogWarning($"PluginName: {PluginName}, Postfixed enemy! {aIss.armorMod}, {aIss.AIControl}, {aIss.armor}");
             return __result = rettype;
-           
-        }       
+
+        }
+
+        public class AIpatches
+
+        {
+
+            [HarmonyPatch(typeof(GameManager), "SpawnAIChar", new Type[] { typeof(Vector3), typeof(AICharacter), typeof(HideoutControl) })]
+            [HarmonyPrefix]
+            public static bool SpawnAIChar_pre(Vector3 location, AICharacter aiChar, HideoutControl hc, GameManager __instance)
+            {
+
+                //MethodInfo method = typeof(GameManager).GetMethod(nameof(GameManager.SpawnAIChar), new object[] { Vector3 location, AICharacter aiChar, HideoutControl hc});
+
+
+                GameObject gameObject = null;
+                if (aiChar.posX != -1f && aiChar.posZ != -1f)
+                {
+                    location = new Vector3(aiChar.posX, 0f, aiChar.posZ);
+                }
+                location = GameManager.GetSafePosition(location, 20f, false);
+                if (hc != null)
+                {
+                    if (hc.hideout.type == HideoutType.Marauder)
+                    {
+                        __instance.marauderBaseObj.SetActive(false);
+                        gameObject = UnityEngine.Object.Instantiate<GameObject>(__instance.marauderBaseObj, location, default(Quaternion));
+                        gameObject.GetComponent<AIMarauder>().Char = aiChar;
+                        gameObject.GetComponent<AIMarauder>().hc = hc;
+                        gameObject.GetComponent<AIMarauder>().guardPosition = location;
+                        gameObject.GetComponent<AIMarauder>().destination = location;
+                        gameObject.name = aiChar.name;
+                        Debug.LogWarning($"PluginName: {PluginName}, Marauder FIXED!");
+                    }
+                    if (hc.hideout.type == HideoutType.Mercenary)
+                    {
+                        __instance.mercenaryBaseObj.SetActive(false);
+                        gameObject = UnityEngine.Object.Instantiate<GameObject>(__instance.mercenaryBaseObj, location, default(Quaternion));
+                        gameObject.GetComponent<AIMercenary>().Char = aiChar;
+                        gameObject.GetComponent<AIMercenary>().hc = hc;
+                        gameObject.GetComponent<AIMercenary>().destination = location;
+                        gameObject.name = aiChar.name;
+                    }
+                }
+                else
+                {
+                    __instance.spaceShipBaseObj.SetActive(false);
+                    gameObject = UnityEngine.Object.Instantiate<GameObject>(__instance.spaceShipBaseObj, location, default(Quaternion));
+                    gameObject.GetComponent<AIControl>().Char = aiChar;
+                    gameObject.name = aiChar.name;
+                }
+                gameObject.GetComponent<AIControl>().shipType = FactionDB.GetFaction(0).shipTypes[0];
+                if (__instance.spaceshipsGroup != null)
+                {
+                    gameObject.transform.SetParent(__instance.spaceshipsGroup);
+                }
+                gameObject.SetActive(true);
+                __instance.marauderBaseObj.SetActive(true);
+                __instance.mercenaryBaseObj.SetActive(true);
+                __instance.spaceShipBaseObj.SetActive(true);
+                return false;
+            }
+
+        }
 
     }
-    }
+
+ }
+
 
