@@ -161,7 +161,7 @@ namespace JPEAK_SV_unlockLevelCapTo60
             __instance.spawnEnemyPlusChance += 5;
             if (PChar.GetRepRank(__instance.currSector.factionControl) > -3 && __instance.spawnEnemyPlusChance > CfgMaxLevel.Value - num4)
             {
-                __instance.spawnEnemyPlusChance = (CfgMaxLevel.Value + 20) - num4;
+                __instance.spawnEnemyPlusChance = (CfgMaxLevel.Value + 40) - num4;
 
             }
             return false;
@@ -179,13 +179,11 @@ namespace JPEAK_SV_unlockLevelCapTo60
             if (aIControl.Char.AIType == 1)
             {
                 aIControl.Char.pilotLevel = PChar.Char.level + 10;
-                aIss.ApplyFleetBonuses();
-                aIss.ApplyPerks(1);
-                aIss.armorMod = 8f + UnityEngine.Random.Range(0f, 3f);
-                aIss.DamageMod(1 + UnityEngine.Random.Range(0, 3));
-                aIss.DamageResist(3 + UnityEngine.Random.Range(1, 3));
+                aIControl.Char.level = PChar.Char.level + UnityEngine.Random.Range(0, 5);
+                aIss.armorMod = 8f + UnityEngine.Random.Range(0f, 5f);
+                aIss.DamageResist(3 + UnityEngine.Random.Range(1, 6));
                 aIss.dmgBonus = UnityEngine.Random.Range(0, 5);
-                aIss.AIControl.Update();
+                //aIss.AIControl.Update();
                 shipobj.gameObject.SetActive(true);
                 aIControl.SearchForEnemies();
                 Debug.LogWarning($"PluginName: {PluginName}, Postfixed enemy! {aIss.armorMod}, {aIss.AIControl}, {aIss.armor}");
@@ -194,28 +192,41 @@ namespace JPEAK_SV_unlockLevelCapTo60
 
             return __result = rettype;
 
-            //}
-            //[HarmonyPatch(typeof(GameManager), "SpawnHideout")]
-            //[HarmonyPrefix]
-            //public static bool SpawnHideout(Hideout hideout, ref GameManager __instance)
-            //{
-            //    Vector3 vector = new Vector3(hideout.centerX, 0f, hideout.centerY);
-            //    GameObject gameObject = UnityEngine.Object.Instantiate(__instance.hideoutObj, vector, Quaternion.Euler(0f, 0f, 0f));
-            //    gameObject.GetComponent<HideoutControl>().hideout = hideout;
-            //    hideout.hideoutControl = gameObject.GetComponent<HideoutControl>();
-            //    gameObject.GetComponent<HideoutControl>().discoveryXP = (int)(40f + (float)hideout.level * (__instance.exploreXP * 10f));
-            //    gameObject.transform.SetParent(__instance.hideoutsGroup);
-            //    for (int i = 0; i < hideout.aiChars.Count; i++)
-            //    {
-            //        Vector3 location = vector + new Vector3(UnityEngine.Random.Range(-100, 101), 0f, UnityEngine.Random.Range(-100, 101));
-            //        __instance.SpawnAIChar(location, hideout.aiChars[i], gameObject.GetComponent<HideoutControl>());
-            //        Debug.LogWarning($"PluginName: {PluginName}, SpawnHideOut (no change)");
+        }
+        [HarmonyPatch(typeof(GameManager), "SpawnHideout")]
+        [HarmonyPrefix]
+        public static bool SpawnHideout(Hideout hideout, ref GameManager __instance)
+        {
+            Vector3 vector = new Vector3(hideout.centerX, 0f, hideout.centerY);
+            GameObject gameObject = UnityEngine.Object.Instantiate(__instance.hideoutObj, vector, Quaternion.Euler(0f, 0f, 0f));
+            gameObject.GetComponent<HideoutControl>().hideout = hideout;
+            hideout.hideoutControl = gameObject.GetComponent<HideoutControl>();
+            gameObject.GetComponent<HideoutControl>().discoveryXP = (int)(40f + (float)hideout.level * (__instance.exploreXP * 10f));
+            gameObject.transform.SetParent(__instance.hideoutsGroup);
+            for (int i = 0; i < hideout.aiChars.Count; i++)
+            {
+                Vector3 location = vector + new Vector3(UnityEngine.Random.Range(-100, 101), 0f, UnityEngine.Random.Range(-100, 101));
+                if (hideout.type == HideoutType.Marauder)
+                {
 
-            //    }
-            //    return false;
-            //}
+                    hideout.aiChars[i].level = PChar.Char.level + 5;
+                    hideout.aiChars[i].pilotLevel = PChar.Char.level + 5;
+                    hideout.aiChars[i].fleetCommander = PChar.Char.level + 5;
+                    hideout.aiChars[i].fighterPilot = PChar.Char.level + 5;
+                    hideout.aiChars[i].gunnerLevel = PChar.Char.level + 5;
+                    hideout.aiChars[i].rank = 2;
+                }
+                __instance.SpawnAIChar(location, hideout.aiChars[i], gameObject.GetComponent<HideoutControl>());
+                  
+                
 
-            [HarmonyPatch(typeof(AIBossCharacter), "CreateBossShip")]
+                Debug.LogWarning($"PluginName: {PluginName}, SpawnHideOut (no change)");
+
+            }
+            return false;
+        }
+
+        [HarmonyPatch(typeof(AIBossCharacter), "CreateBossShip")]
             [HarmonyPrefix]
             static bool CreateBossShip_pref(TSector sector, Coordenates pos, int factionID, AIBossCharacter __instance)
             {
@@ -223,10 +234,11 @@ namespace JPEAK_SV_unlockLevelCapTo60
                 __instance.AIType = 4;
                 __instance.level = PChar.Char.level + 10;
                 __instance.rank = 2;
-                __instance.fighterPilot = Mathf.Clamp(__instance.level, 5, PChar.Char.level);
-                __instance.fleetCommander = Mathf.Clamp(__instance.level, 5, PChar.Char.level);
-                __instance.pilotLevel = Mathf.Clamp(__instance.level, 5, PChar.Char.level);
-                __instance.gunnerLevel = Mathf.Clamp(__instance.level, 5, PChar.Char.level);
+                __instance.fighterPilot = Mathf.Clamp(__instance.level, PChar.Char.level - 10, PChar.Char.level +10);
+                __instance.fleetCommander = Mathf.Clamp(__instance.level, PChar.Char.level - 10, PChar.Char.level + 10);
+                __instance.pilotLevel = Mathf.Clamp(__instance.level, PChar.Char.level - 10, PChar.Char.level + 10);
+                __instance.gunnerLevel = Mathf.Clamp(__instance.level, PChar.Char.level - 10, PChar.Char.level + 10);
+                
                 __instance.ignoreAsteroidObstacles = true;
                 __instance.ignoreSpaceshipObstacles = true;
                 __instance.posX = pos.x;
@@ -250,12 +262,13 @@ namespace JPEAK_SV_unlockLevelCapTo60
                     AIMercenaryCharacter aIMercenaryCharacter = new AIMercenaryCharacter();
                     aIMercenaryCharacter.CreateGuardianShip(sector);
                     aIMercenaryCharacter.level = PChar.Char.level + 10;
-                    aIMercenaryCharacter.fleetCommander = Mathf.Clamp(__instance.level, 5, PChar.Char.level);
-                    aIMercenaryCharacter.fighterPilot = Mathf.Clamp(__instance.level, 5, PChar.Char.level);
-                    aIMercenaryCharacter.pilotLevel = Mathf.Clamp(__instance.level, 5, PChar.Char.level);
-                    aIMercenaryCharacter.gunnerLevel = Mathf.Clamp(__instance.level, 5, PChar.Char.level);
-                    aIMercenaryCharacter.fighterPilot = Mathf.Clamp(__instance.level, 5, PChar.Char.level);
-                    aIMercenaryCharacter.shipData.HPbase *= 1.5f;
+                    aIMercenaryCharacter.fleetCommander = Mathf.Clamp(__instance.level, PChar.Char.level - 10, PChar.Char.level);
+                    aIMercenaryCharacter.fighterPilot = Mathf.Clamp(__instance.level, PChar.Char.level - 10, PChar.Char.level);
+                    aIMercenaryCharacter.pilotLevel = Mathf.Clamp(__instance.level, PChar.Char.level - 10, PChar.Char.level);
+                    aIMercenaryCharacter.gunnerLevel = Mathf.Clamp(__instance.level, PChar.Char.level - 10, PChar.Char.level);
+                    aIMercenaryCharacter.fighterPilot = Mathf.Clamp(__instance.level, PChar.Char.level - 10, PChar.Char.level);
+                    aIMercenaryCharacter.shipData.HPbase *= 3f;
+
                     __instance.guardians.Add(aIMercenaryCharacter);
                 }
                 Debug.LogWarning($"PluginName: {PluginName}, Enahnced RAVANGER BOSS!!!");
@@ -351,6 +364,5 @@ namespace JPEAK_SV_unlockLevelCapTo60
 
     }
 
-}
 
 
