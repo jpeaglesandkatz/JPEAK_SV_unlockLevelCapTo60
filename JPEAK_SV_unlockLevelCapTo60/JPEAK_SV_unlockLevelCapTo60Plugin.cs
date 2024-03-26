@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.Remoting.Contexts;
 using System.Reflection.Emit;
+using JetBrains.Annotations;
 
 namespace JPEAK_SV_unlockLevelCapTo60
 {
@@ -42,7 +43,7 @@ namespace JPEAK_SV_unlockLevelCapTo60
             // Apply all of our patches
             Logger.LogInfo($"PluginName: {PluginName}, VersionString: {VersionString} is loading...");
             Harmony.CreateAndPatchAll(typeof(JPEAK_SV_unlockLevelCapTo60Plugin), null);
-            //Harmony.CreateAndPatchAll(typeof(AIpatches));
+            Harmony.CreateAndPatchAll(typeof(AIpatches));
 
             Logger.LogInfo($"PluginName: {PluginName}, VersionString: {VersionString} is loaded.");
 
@@ -168,6 +169,24 @@ namespace JPEAK_SV_unlockLevelCapTo60
             return false;
         }
 
+
+        [HarmonyPatch(typeof(GameManager), "Update")]
+        [HarmonyPrefix]
+        public static bool Update_pref(GameManager __instance )
+        {
+            if (!GameManager.instance == null)
+
+            {
+                if (PChar.Char.level > 20 + UnityEngine.Random.Range(0, 5))
+                {
+                    __instance.spawnEnemyTime = 5f + UnityEngine.Random.Range(0f, 7f);
+                    //__instance.spawnEnemyCount = 60f + UnityEngine.Random.Range(0f, 20f);
+
+                } }
+
+            return true;
+        }
+
         [HarmonyPatch(typeof(GameManager), "SpawnShip")]
         [HarmonyPostfix]
         public static Transform SpawnShip_post(Transform rettype, ref Transform __result)
@@ -181,9 +200,9 @@ namespace JPEAK_SV_unlockLevelCapTo60
             {
                 aIControl.Char.pilotLevel = PChar.Char.level + 10;
                 aIControl.Char.level = PChar.Char.level + UnityEngine.Random.Range(0, 5);
-                aIss.armorMod = 8f + UnityEngine.Random.Range(0f, 5f);
-                aIss.DamageResist(3 + UnityEngine.Random.Range(1, 6));
-                aIss.dmgBonus = UnityEngine.Random.Range(0, 5);
+                aIss.armorMod = 13f + UnityEngine.Random.Range(0f, 5f);
+                aIss.DamageResist(6 + UnityEngine.Random.Range(1, 3));
+                aIss.dmgBonus = UnityEngine.Random.Range(0, 8);
                 //aIss.AIControl.Update();
                 shipobj.gameObject.SetActive(true);
                 aIControl.SearchForEnemies();
@@ -216,15 +235,11 @@ namespace JPEAK_SV_unlockLevelCapTo60
                     hideout.aiChars[i].fleetCommander = PChar.Char.level + UnityEngine.Random.Range(0, 5);
                     hideout.aiChars[i].fighterPilot = PChar.Char.level + UnityEngine.Random.Range(0, 15);
                     hideout.aiChars[i].gunnerLevel = PChar.Char.level + UnityEngine.Random.Range(0, 15);
-                    hideout.aiChars[i].rank = 2 + UnityEngine.Random.Range(0, 2);
+                    hideout.aiChars[i].rank = 2 + UnityEngine.Random.Range(0, 1);
                 }
                 
                 __instance.SpawnAIChar(location, hideout.aiChars[i], gameObject.GetComponent<HideoutControl>());
                 if (UnityEngine.Random.Range(0, 100) < 50)
-                {
-                    // Chance to spawn the same char twice
-                    __instance.SpawnAIChar(location, hideout.aiChars[i], gameObject.GetComponent<HideoutControl>());
-                }
 
                 Debug.LogWarning($"PluginName: {PluginName}, SpawnHideOut (no change)");
 
@@ -261,6 +276,8 @@ namespace JPEAK_SV_unlockLevelCapTo60
                     __instance.shipData = new SpaceShipData();
                 }
                 __instance.shipData.shipModelID = randomModel.id;
+                __instance.shipData.HPbase *= 5 + UnityEngine.Random.Range(0f, 2f);
+                __instance.shipData.shieldBase *= 2f+ UnityEngine.Random.Range(0f, 1.5f);
                 __instance.guardians = new List<AIMercenaryCharacter>();
                 int num2 = (PChar.Char.level) / 12;
                 for (int i = 0; i < num2; i++)
@@ -274,99 +291,93 @@ namespace JPEAK_SV_unlockLevelCapTo60
                     aIMercenaryCharacter.gunnerLevel = Mathf.Clamp(__instance.level, PChar.Char.level - 10, PChar.Char.level);
                     aIMercenaryCharacter.fighterPilot = Mathf.Clamp(__instance.level, PChar.Char.level - 10, PChar.Char.level);
                     aIMercenaryCharacter.shipData.HPbase *= 3f;
-
+                    aIMercenaryCharacter.rank = 2 + UnityEngine.Random.Range(0, 1);
+                    
                     __instance.guardians.Add(aIMercenaryCharacter);
-                }
+                
+                    __instance.guardians[i].shipData.shieldBase *= 4f + UnityEngine.Random.Range(0f, 1.5f);
+                    __instance.guardians[i].shipDmgToleranceMod = 2f + UnityEngine.Random.Range(0f, 1.5f);         }
                 Debug.LogWarning($"PluginName: {PluginName}, Enahnced RAVANGER BOSS!!!");
                 return false;
             }
 
 
 
-            //public class AIpatches
+        public class AIpatches
 
-            //{
+        {
 
-            //    [HarmonyPatch(typeof(GameManager), "SpawnAIChar", new Type[] { typeof(Vector3), typeof(AICharacter), typeof(HideoutControl) })]
-            //    [HarmonyPrefix]
-            //    public static bool SpawnAIChar_pre(Vector3 location, AICharacter aiChar, HideoutControl hc, ref GameManager __instance)
-            //    {
+            [HarmonyPatch(typeof(GameManager), "SpawnAIChar", new Type[] { typeof(Vector3), typeof(AICharacter), typeof(HideoutControl) })]
+            [HarmonyPrefix]
+            public static bool SpawnAIChar_pre(Vector3 location, AICharacter aiChar, HideoutControl hc, ref GameManager __instance)
+            {
 
-            //        //MethodInfo method = typeof(GameManager).GetMethod(nameof(GameManager.SpawnAIChar), new Type[] { Vector3 location, AICharacter aiChar, HideoutControl hc});
-
-
-            //        GameObject gameObject = null;
-            //        if (aiChar.posX != -1f && aiChar.posZ != -1f)
-            //        {
-            //            location = new Vector3(aiChar.posX, 0f, aiChar.posZ);
-            //        }
-            //        location = GameManager.GetSafePosition(location, 20f, false);
-            //        if (hc != null)
-            //        {
-            //            if (hc.hideout.type == HideoutType.Marauder)
-            //            {
-            //                __instance.marauderBaseObj.SetActive(false);
-
-            //                gameObject = UnityEngine.Object.Instantiate<GameObject>(__instance.marauderBaseObj, location, default(Quaternion));
-            //                gameObject.GetComponent<AIMarauder>().Char = aiChar;
-            //                gameObject.GetComponent<AIMarauder>().Char.pilotLevel = aiChar.pilotLevel + 10;
-            //                gameObject.GetComponent<AIMarauder>().Char.techLevel = aiChar.techLevel + 10;
-            //                gameObject.GetComponent<AIMarauder>().hc = hc;
-            //                gameObject.GetComponent<AIMarauder>().guardPosition = location;
-            //                gameObject.GetComponent<AIMarauder>().destination = location;
-            //                //gameObject.GetComponent<AIMarauder>().ss.shipClass = 3 + UnityEngine.Random.Range(0, 1);
-            //                //gameObject.GetComponent<SpaceShip>().armor = 30;
-            //                //gameObject.GetComponent<SpaceShip>().dmgBonus = UnityEngine.Random.Range(4f, 8f);
-            //                //gameObject.GetComponent<SpaceShip>().shipClass = 3 + UnityEngine.Random.Range(0, 1);
-            //                //gameObject.GetComponent<SpaceShip>().ApplyFleetBonuses();
-            //                //gameObject.GetComponent<SpaceShip>().ApplyPerks(1);
-            //                //gameObject.GetComponent<SpaceShip>().AIControl.Update();
+                //MethodInfo method = typeof(GameManager).GetMethod(nameof(GameManager.SpawnAIChar), new Type[] { Vector3 location, AICharacter aiChar, HideoutControl hc});
 
 
-            //                //gameObject.GetComponent<AIMarauder>().Char.pilotLevel = PChar.Char.level + 5;
-            //                //__instance.spaceShipBaseObj.GetComponent<AIMarauder>().Char.pilotLevel = PChar.Char.level + 5;
-            //                //if gameObject.GetComponent<AIMarauder>().hc
-            //                //gameObject.GetComponent<AIMarauder>().ss.armorMod = 2f + UnityEngine.Random.Range(0f, 3f);
-            //                //gameObject.GetComponent<AIMarauder>().ss.armor = 4;
-            //                //gameObject.GetComponent<AIMarauder>().ss.DamageResist(1 + UnityEngine.Random.Range(0,2));
-            //                //gameObject.GetComponent<AIMarauder>().ss.dmgBonus = UnityEngine.Random.Range(0f, 3f);
-            //                //gameObject.GetComponent<AIMarauder>().AIControl.Update();
+                GameObject gameObject = null;
+                if (aiChar.posX != -1f && aiChar.posZ != -1f)
+                {
+                    location = new Vector3(aiChar.posX, 0f, aiChar.posZ);
+                }
+                location = GameManager.GetSafePosition(location, 20f, false);
+                if (hc != null)
+                {
+                    if (hc.hideout.type == HideoutType.Marauder)
+                    {
+                        __instance.marauderBaseObj.SetActive(false);
 
-            //                gameObject.name = aiChar.name;
-            //                Debug.LogWarning($"PluginName: {PluginName}, Marauder FIXED!");
-            //            }
-            //            if (hc.hideout.type == HideoutType.Mercenary)
-            //            {
-            //                __instance.mercenaryBaseObj.SetActive(false);
-            //                gameObject = UnityEngine.Object.Instantiate<GameObject>(__instance.mercenaryBaseObj, location, default(Quaternion));
-            //                gameObject.GetComponent<AIMercenary>().Char = aiChar;
-            //                gameObject.GetComponent<AIMercenary>().hc = hc;
-            //                gameObject.GetComponent<AIMercenary>().destination = location;
-            //                gameObject.name = aiChar.name;
-            //            }
-            //        }
-            //        else
-            //        {
-            //            __instance.spaceShipBaseObj.SetActive(false);
-            //            gameObject = UnityEngine.Object.Instantiate<GameObject>(__instance.spaceShipBaseObj, location, default(Quaternion));
-            //            gameObject.GetComponent<AIControl>().Char = aiChar;
-            //            gameObject.name = aiChar.name;
-            //        }
-            //        gameObject.GetComponent<AIControl>().shipType = FactionDB.GetFaction(0).shipTypes[0];
-            //        if (__instance.spaceshipsGroup != null)
-            //        {
-            //            gameObject.transform.SetParent(__instance.spaceshipsGroup);
-            //        }
-            //        gameObject.SetActive(true);
-            //        __instance.marauderBaseObj.SetActive(true);
-            //        __instance.mercenaryBaseObj.SetActive(true);
-            //        __instance.spaceShipBaseObj.SetActive(true);
-            //        return false;
-            //    }
+                        gameObject = UnityEngine.Object.Instantiate<GameObject>(__instance.marauderBaseObj, location, default(Quaternion));
+                        gameObject.GetComponent<AIMarauder>().Char = aiChar;
+                        gameObject.GetComponent<AIMarauder>().Char.pilotLevel = aiChar.pilotLevel + 10;
+                        gameObject.GetComponent<AIMarauder>().Char.techLevel = aiChar.techLevel + 10;
+                        gameObject.GetComponent<AIMarauder>().Char.gunnerLevel = aiChar.gunnerLevel + 10;
+                        gameObject.GetComponent<AIMarauder>().Char.fighterPilot = aiChar.fighterPilot + 10;
+                        gameObject.GetComponent<AIMarauder>().Char.fleetCommander = aiChar.fleetCommander + 10;
+                        gameObject.GetComponent<AIMarauder>().Char.shipData.HPbase *= 3f;
+                        gameObject.GetComponent<AIMarauder>().Char.shipData.shieldBase *= 4f;
+                        gameObject.GetComponent<AIMarauder>().Char.shipDmgToleranceMod = 2f + UnityEngine.Random.Range(0f, 1.5f);
+                        gameObject.GetComponent<AIMarauder>().Char.rank = 2 + UnityEngine.Random.Range(0, 1);
 
-            //}
+                        gameObject.GetComponent<AIMarauder>().hc = hc;
+                        gameObject.GetComponent<AIMarauder>().guardPosition = location;
+                        gameObject.GetComponent<AIMarauder>().destination = location;
+ 
+                        gameObject.name = aiChar.name;
+                        Debug.LogWarning($"PluginName: {PluginName}, Marauder FIXED!");
+                    }
+                    if (hc.hideout.type == HideoutType.Mercenary)
+                    {
+                        __instance.mercenaryBaseObj.SetActive(false);
+                        gameObject = UnityEngine.Object.Instantiate<GameObject>(__instance.mercenaryBaseObj, location, default(Quaternion));
+                        gameObject.GetComponent<AIMercenary>().Char = aiChar;
+                        gameObject.GetComponent<AIMercenary>().hc = hc;
+                        gameObject.GetComponent<AIMercenary>().destination = location;
+                        gameObject.name = aiChar.name;
+                    }
+                }
+                else
+                {
+                    __instance.spaceShipBaseObj.SetActive(false);
+                    gameObject = UnityEngine.Object.Instantiate<GameObject>(__instance.spaceShipBaseObj, location, default(Quaternion));
+                    gameObject.GetComponent<AIControl>().Char = aiChar;
+                    gameObject.name = aiChar.name;
+                }
+                gameObject.GetComponent<AIControl>().shipType = FactionDB.GetFaction(0).shipTypes[0];
+                if (__instance.spaceshipsGroup != null)
+                {
+                    gameObject.transform.SetParent(__instance.spaceshipsGroup);
+                }
+                gameObject.SetActive(true);
+                __instance.marauderBaseObj.SetActive(true);
+                __instance.mercenaryBaseObj.SetActive(true);
+                __instance.spaceShipBaseObj.SetActive(true);
+                return false;
+            }
 
         }
+
+    }
 
     }
 
