@@ -154,6 +154,7 @@ namespace JPEAK_SV_unlockLevelCapTo60
 
                 num = +2;
                 __instance.StartCoroutine(__instance.CreateEnemyRoutine(spawnInterval, num));
+                __instance.StartCoroutine(__instance.CreateEnemyRoutine(spawnInterval - UnityEngine.Random.Range(0f, 20f), num));
                 Debug.LogWarning($"PluginName: {PluginName}, Enhanced Create Enemy {bounty}, {num3}, {num4}, {num5}, {num6}, {spawnInterval}, {num}");
                 return false;
             }
@@ -206,19 +207,24 @@ namespace JPEAK_SV_unlockLevelCapTo60
             for (int i = 0; i < hideout.aiChars.Count; i++)
             {
                 Vector3 location = vector + new Vector3(UnityEngine.Random.Range(-100, 101), 0f, UnityEngine.Random.Range(-100, 101));
-                if (hideout.type == HideoutType.Marauder)
+                // Only bump hidout stats if player level >30
+                if (hideout.type == HideoutType.Marauder || PChar.Char.level > 30)
                 {
-
-                    hideout.aiChars[i].level = PChar.Char.level + 5;
-                    hideout.aiChars[i].pilotLevel = PChar.Char.level + 5;
-                    hideout.aiChars[i].fleetCommander = PChar.Char.level + 5;
-                    hideout.aiChars[i].fighterPilot = PChar.Char.level + 5;
-                    hideout.aiChars[i].gunnerLevel = PChar.Char.level + 5;
-                    hideout.aiChars[i].rank = 2;
+                    // Only change Marauder AI. Change aIChar before it is spawned
+                    hideout.aiChars[i].level = PChar.Char.level + UnityEngine.Random.Range(0, 15);
+                    hideout.aiChars[i].pilotLevel = PChar.Char.level + UnityEngine.Random.Range(0, 15);
+                    hideout.aiChars[i].fleetCommander = PChar.Char.level + UnityEngine.Random.Range(0, 5);
+                    hideout.aiChars[i].fighterPilot = PChar.Char.level + UnityEngine.Random.Range(0, 15);
+                    hideout.aiChars[i].gunnerLevel = PChar.Char.level + UnityEngine.Random.Range(0, 15);
+                    hideout.aiChars[i].rank = 2 + UnityEngine.Random.Range(0, 2);
                 }
-                __instance.SpawnAIChar(location, hideout.aiChars[i], gameObject.GetComponent<HideoutControl>());
-                  
                 
+                __instance.SpawnAIChar(location, hideout.aiChars[i], gameObject.GetComponent<HideoutControl>());
+                if (UnityEngine.Random.Range(0, 100) < 50)
+                {
+                    // Chance to spawn the same char twice
+                    __instance.SpawnAIChar(location, hideout.aiChars[i], gameObject.GetComponent<HideoutControl>());
+                }
 
                 Debug.LogWarning($"PluginName: {PluginName}, SpawnHideOut (no change)");
 
@@ -232,7 +238,7 @@ namespace JPEAK_SV_unlockLevelCapTo60
             {
                 __instance.factionIndex = factionID;
                 __instance.AIType = 4;
-                __instance.level = PChar.Char.level + 10;
+                __instance.level = PChar.Char.level + UnityEngine.Random.Range(3, 10);
                 __instance.rank = 2;
                 __instance.fighterPilot = Mathf.Clamp(__instance.level, PChar.Char.level - 10, PChar.Char.level +10);
                 __instance.fleetCommander = Mathf.Clamp(__instance.level, PChar.Char.level - 10, PChar.Char.level + 10);
