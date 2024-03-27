@@ -70,6 +70,51 @@ namespace JPEAK_SV_unlockLevelCapTo60
 
         }
 
+        [HarmonyPatch(typeof(ShipStats), "ApplyAIBonus")]
+        [HarmonyPrefix]
+        public static bool ApplyAIBonus(AICharacter aiChar, ShipStats __instance)
+        {
+            if (GameData.data.difficulty == -1)
+            {
+                __instance.baseHP *= CfgDefense.Value * 0.67f;
+                __instance.ss.dmgBonus -= CfgDefense.Value * 0.3f;
+            }
+            else if (__instance.ss.shipClass >= 4 && aiChar.level > 20)
+            {
+                __instance.ss.armorMod += CfgDefense.Value * 0.005f * (float)(aiChar.level - 20);
+            }
+            if (GameData.data.difficulty == 1)
+            {
+                __instance.baseHP *= CfgDefense.Value * 1f;
+                __instance.ss.armor += (int)Math.Round(CfgDefense.Value * 30);
+                __instance.ss.armorMod += CfgDefense.Value * 0.15f;
+                __instance.ss.dmgBonus += CfgDefense.Value * 0.15f;
+            }
+            if (__instance.baseHP < 10f)
+            {
+                __instance.baseHP = CfgDefense.Value * 10f;
+            }
+            if (aiChar.rank > 0)
+            {
+                __instance.acceleration *= 1f + (float)aiChar.rank / 10f;
+                if (aiChar.rank == 1)
+                {
+                    __instance.baseHP *= CfgDefense.Value * 1.34f;
+                    __instance.ss.dmgBonus += CfgDamage.Value * 1.45f;
+                }
+                if (aiChar.rank == 2)
+                {
+                    __instance.baseHP *= CfgDefense.Value * 3f;
+                }
+                if (aiChar.AIType == 4)
+                {
+                    __instance.ss.armorMod += CfgDefense.Value * 0.2f;
+                    __instance.ss.dmgBonus += CfgDamage.Value * 0.3f;
+                }
+            }
+            return false;
+        }
+
         //[HarmonyPatch(typeof(GameManager), "CreateEnemy")]
         //[HarmonyPrefix]
         //public static bool CreateEnemy_pref(ref float spawnInterval, GameManager __instance)
@@ -245,11 +290,11 @@ namespace JPEAK_SV_unlockLevelCapTo60
                     hideout.aiChars[i].fleetCommander = PChar.Char.level + UnityEngine.Random.Range(0, 5);
                     hideout.aiChars[i].fighterPilot = PChar.Char.level + UnityEngine.Random.Range(0, 15);
                     hideout.aiChars[i].gunnerLevel = PChar.Char.level + UnityEngine.Random.Range(0, 15);
-                    hideout.aiChars[i].rank = 2 + UnityEngine.Random.Range(0, 1);
+                    hideout.aiChars[i].rank = 1 + UnityEngine.Random.Range(0, 2);
                 }
                 
                 __instance.SpawnAIChar(location, hideout.aiChars[i], gameObject.GetComponent<HideoutControl>());
-                if (UnityEngine.Random.Range(0, 100) < 50)
+                //if (UnityEngine.Random.Range(0, 100) < 50)
 
                 Debug.LogWarning($"PluginName: {PluginName}, SpawnHideOut (no change)");
 
@@ -258,58 +303,59 @@ namespace JPEAK_SV_unlockLevelCapTo60
         }
 
         [HarmonyPatch(typeof(AIBossCharacter), "CreateBossShip")]
-            [HarmonyPrefix]
-            static bool CreateBossShip_pref(TSector sector, Coordenates pos, int factionID, AIBossCharacter __instance)
+        [HarmonyPrefix]
+        static bool CreateBossShip_pref(TSector sector, Coordenates pos, int factionID, AIBossCharacter __instance)
+        {
+            __instance.factionIndex = factionID;
+            __instance.AIType = 4;
+            __instance.level = PChar.Char.level + UnityEngine.Random.Range(3, 10);
+            __instance.rank = 2;
+            __instance.fighterPilot = Mathf.Clamp(__instance.level, PChar.Char.level - 3, PChar.Char.level + 10);
+            __instance.fleetCommander = Mathf.Clamp(__instance.level, PChar.Char.level - 3, PChar.Char.level + 10);
+            __instance.pilotLevel = Mathf.Clamp(__instance.level, PChar.Char.level - 3, PChar.Char.level + 10);
+            __instance.gunnerLevel = Mathf.Clamp(__instance.level, PChar.Char.level - 3, PChar.Char.level + 10);
+
+            __instance.ignoreAsteroidObstacles = true;
+            __instance.ignoreSpaceshipObstacles = true;
+            __instance.posX = pos.x;
+            __instance.posZ = pos.y;
+            int num = 4 + PChar.Char.level / 15;
+            int maxShipClass = num;
+            if (num >= 7)
             {
-                __instance.factionIndex = factionID;
-                __instance.AIType = 4;
-                __instance.level = PChar.Char.level + UnityEngine.Random.Range(3, 10);
-                __instance.rank = 2;
-                __instance.fighterPilot = Mathf.Clamp(__instance.level, PChar.Char.level - 3, PChar.Char.level +10);
-                __instance.fleetCommander = Mathf.Clamp(__instance.level, PChar.Char.level - 3, PChar.Char.level + 10);
-                __instance.pilotLevel = Mathf.Clamp(__instance.level, PChar.Char.level - 3, PChar.Char.level + 10);
-                __instance.gunnerLevel = Mathf.Clamp(__instance.level, PChar.Char.level - 3, PChar.Char.level + 10);
-                
-                __instance.ignoreAsteroidObstacles = true;
-                __instance.ignoreSpaceshipObstacles = true;
-                __instance.posX = pos.x;
-                __instance.posZ = pos.y;
-                int num = 4 + PChar.Char.level / 15;
-                int maxShipClass = num;
-                if (num >= 7)
-                {
-                    num = 6;
-                }
-                ShipModelData randomModel = ShipDB.GetRandomModel(num, maxShipClass, 0, 99, allowUnarmed: false, allowSpinalMount: true, allowNonCombatRole: false);
-                if (__instance.shipData == null)
-                {
-                    __instance.shipData = new SpaceShipData();
-                }
-                __instance.shipData.shipModelID = randomModel.id;
-                __instance.shipData.HPbase *= CfgDefense.Value * UnityEngine.Random.Range(1f, 5f);
-                __instance.shipData.shieldBase *= CfgDefense.Value * (2f + UnityEngine.Random.Range(0f, 3.5f));
-                __instance.guardians = new List<AIMercenaryCharacter>();
-                int num2 = (PChar.Char.level) / 12;
-                for (int i = 0; i < num2; i++)
-                {
-                    AIMercenaryCharacter aIMercenaryCharacter = new AIMercenaryCharacter();
-                    aIMercenaryCharacter.CreateGuardianShip(sector);
-                    aIMercenaryCharacter.level = PChar.Char.level + 10;
-                    aIMercenaryCharacter.fleetCommander = Mathf.Clamp(__instance.level, PChar.Char.level - 10, PChar.Char.level);
-                    aIMercenaryCharacter.fighterPilot = Mathf.Clamp(__instance.level, PChar.Char.level - 10, PChar.Char.level);
-                    aIMercenaryCharacter.pilotLevel = Mathf.Clamp(__instance.level, PChar.Char.level - 10, PChar.Char.level);
-                    aIMercenaryCharacter.gunnerLevel = Mathf.Clamp(__instance.level, PChar.Char.level - 10, PChar.Char.level);
-                    aIMercenaryCharacter.fighterPilot = Mathf.Clamp(__instance.level, PChar.Char.level - 10, PChar.Char.level);
-                    aIMercenaryCharacter.shipData.HPbase *= CfgDefense.Value * (2f + UnityEngine.Random.Range(0f, 3.5f));
-                    aIMercenaryCharacter.rank = 2 + UnityEngine.Random.Range(0, 1);
-                    
-                    __instance.guardians.Add(aIMercenaryCharacter);
-                
-                    __instance.guardians[i].shipData.shieldBase *= CfgDefense.Value * (2f + UnityEngine.Random.Range(0f, 3.5f));
-                    __instance.guardians[i].shipDmgToleranceMod = CfgDefense.Value * (2f + UnityEngine.Random.Range(0f, 3.5f));       }
+                num = 6;
+            }
+            ShipModelData randomModel = ShipDB.GetRandomModel(num, maxShipClass, 0, 99, allowUnarmed: false, allowSpinalMount: true, allowNonCombatRole: false);
+            if (__instance.shipData == null)
+            {
+                __instance.shipData = new SpaceShipData();
+            }
+            __instance.shipData.shipModelID = randomModel.id;
+            __instance.shipData.HPbase *= CfgDefense.Value * UnityEngine.Random.Range(1f, 2f);
+            __instance.shipData.shieldBase *= CfgDefense.Value * (1f + UnityEngine.Random.Range(0f, 1.5f));
+            __instance.guardians = new List<AIMercenaryCharacter>();
+            int num2 = (PChar.Char.level) / 12;
+            for (int i = 0; i < num2; i++)
+            {
+                AIMercenaryCharacter aIMercenaryCharacter = new AIMercenaryCharacter();
+                aIMercenaryCharacter.CreateGuardianShip(sector);
+                aIMercenaryCharacter.level = PChar.Char.level + 10;
+                aIMercenaryCharacter.fleetCommander = Mathf.Clamp(__instance.level, PChar.Char.level - 10, PChar.Char.level);
+                aIMercenaryCharacter.fighterPilot = Mathf.Clamp(__instance.level, PChar.Char.level - 10, PChar.Char.level);
+                aIMercenaryCharacter.pilotLevel = Mathf.Clamp(__instance.level, PChar.Char.level - 10, PChar.Char.level);
+                aIMercenaryCharacter.gunnerLevel = Mathf.Clamp(__instance.level, PChar.Char.level - 10, PChar.Char.level);
+                aIMercenaryCharacter.fighterPilot = Mathf.Clamp(__instance.level, PChar.Char.level - 10, PChar.Char.level);
+                aIMercenaryCharacter.shipData.HPbase *= CfgDefense.Value * (2f + UnityEngine.Random.Range(0f, 1.5f));
+                aIMercenaryCharacter.rank = 1 + UnityEngine.Random.Range(0, 1);
+
+                __instance.guardians.Add(aIMercenaryCharacter);
+
+
+            }
                 Debug.LogWarning($"PluginName: {PluginName}, Enahnced RAVANGER BOSS!!!");
                 return false;
-            }
+        }
+        
 
 
 
