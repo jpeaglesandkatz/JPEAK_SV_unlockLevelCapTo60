@@ -26,7 +26,11 @@ namespace JPEAK_SV_unlockLevelCapTo60
 
 
         public static ConfigEntry<int> CfgMaxLevel;
+        public static ConfigEntry<float> CfgDefense;
+        public static ConfigEntry<float> CfgDamage;
 
+        public static string CfgDefenseKey = "Defense scaling";
+        public static string CfgDamageKey = "Damage scaling";
 
         private static readonly Harmony Harmony = new Harmony(MyGUID);
         public static ManualLogSource Log = new ManualLogSource(PluginName);
@@ -39,6 +43,12 @@ namespace JPEAK_SV_unlockLevelCapTo60
                 60,
                 new ConfigDescription("Set Max level Cap",
                     new AcceptableValueRange<int>(50, 100)));
+            CfgDefense = Config.Bind("Scaling", CfgDefenseKey, 1f,
+                new ConfigDescription("Defense scaling",
+                    new AcceptableValueRange<float>(0.1f, 5f)));
+            CfgDamage = Config.Bind("Scaling", CfgDamageKey, 1f,
+                new ConfigDescription("Damage scaling",
+                    new AcceptableValueRange<float>(0.1f, 5f)));
 
             // Apply all of our patches
             Logger.LogInfo($"PluginName: {PluginName}, VersionString: {VersionString} is loading...");
@@ -60,114 +70,114 @@ namespace JPEAK_SV_unlockLevelCapTo60
 
         }
 
-        [HarmonyPatch(typeof(GameManager), "CreateEnemy")]
-        [HarmonyPrefix]
-        public static bool CreateEnemy_pref(ref float spawnInterval, GameManager __instance)
-        {
+        //[HarmonyPatch(typeof(GameManager), "CreateEnemy")]
+        //[HarmonyPrefix]
+        //public static bool CreateEnemy_pref(ref float spawnInterval, GameManager __instance)
+        //{
 
-            //GameObject bse = GameObject.Find("Base");
-            if (__instance == null)
-            {
-                return false;
-            }
+        //    //GameObject bse = GameObject.Find("Base");
+        //    if (__instance == null)
+        //    {
+        //        return false;
+        //    }
 
-            if (__instance == null)
-            {
-                return false;
-            }
+        //    if (__instance == null)
+        //    {
+        //        return false;
+        //    }
 
-            if (__instance.Player == null)
-            {
-                __instance.Player = GameObject.FindGameObjectWithTag("Player");
-            }
-            if (__instance.Player == null || __instance.performingSpawnFleet || __instance.currSector.isStarterSector)
-            {
-                return false;
-            }
-            int difficulty = GameData.data.difficulty;
-            int level = PChar.Char.level;
-            int bounty = __instance.Player.GetComponent<SpaceShip>().stats.bounty;
-            if (bounty <= 0 && ((difficulty == -1 && level < 5) || (difficulty == 0 && level < 3)))
-            {
-                return false;
-            }
-            int num = -1;
-            if (PChar.GetRep(__instance.currSector.factionControl) <= -1000)
-            {
-                num = __instance.currSector.factionControl;
-            }
-            else
-            {
-                int num2 = bounty;
-                if (__instance.currSector.factionControl <= 0)
-                {
-                    num = __instance.currSector.factions.GetEnemyFaction();
-                    if (num == -1)
-                    {
-                        num2 += 20 + __instance.currSector.GetHideoutQuantity(HideoutType.Marauder, true) * 15;
-                    }
-                    if (__instance.currSector.type == SectorType.ShipGraveyard)
-                    {
-                        num2 += 20;
-                    }
-                }
-                if (__instance.currSector.factionControl == 0)
-                {
-                    num2 += __instance.currSector.GetHideoutQuantity(HideoutType.Marauder, true) * 12;
-                }
-                if (__instance.currSector.factionControl > 0)
-                {
-                    num2 -= 10;
-                    if (num2 < 0)
-                    {
-                        num2 = 0;
-                    }
-                    num2 += __instance.currSector.GetHideoutQuantity(HideoutType.Marauder, true) * 5;
-                }
-                if (num == -1 && UnityEngine.Random.Range(1, 101) <= num2)
-                {
-                    num = 0;
-                }
-            }
-            if (num == -1)
-            {
-                __instance.spawnEnemyTime = 120f;
-                return false;
-            }
-            int num3 = PChar.Char.level - __instance.currSector.level;
-            if (PChar.Char.level < __instance.currSector.level)
-            {
-                num3 /= 2;
-            }
-            int num4 = (int)(PChar.SKMod(16) * 5f);
-            int num5 = CfgMaxLevel.Value - num3 * 5 - num4;
-            int num6 = num5 - CfgMaxLevel.Value;
-            num5 += __instance.spawnEnemyPlusChance;
-            num5 += ((bounty > 0) ? bounty : (bounty * 2));
-            if (UnityEngine.Random.Range(1, 101) <= num5)
-            {
-                __instance.spawnEnemyTime = (float)(200 - num6);
-                __instance.spawnEnemyPlusChance = 2;
-                if (__instance.spawnEnemyTime < 120f)
-                {
-                    __instance.spawnEnemyTime = 120f;
-                }
+        //    if (__instance.Player == null)
+        //    {
+        //        __instance.Player = GameObject.FindGameObjectWithTag("Player");
+        //    }
+        //    if (__instance.Player == null || __instance.performingSpawnFleet || __instance.currSector.isStarterSector)
+        //    {
+        //        return false;
+        //    }
+        //    int difficulty = GameData.data.difficulty;
+        //    int level = PChar.Char.level;
+        //    int bounty = __instance.Player.GetComponent<SpaceShip>().stats.bounty;
+        //    if (bounty <= 0 && ((difficulty == -1 && level < 5) || (difficulty == 0 && level < 3)))
+        //    {
+        //        return false;
+        //    }
+        //    int num = -1;
+        //    if (PChar.GetRep(__instance.currSector.factionControl) <= -1000)
+        //    {
+        //        num = __instance.currSector.factionControl;
+        //    }
+        //    else
+        //    {
+        //        int num2 = bounty;
+        //        if (__instance.currSector.factionControl <= 0)
+        //        {
+        //            num = __instance.currSector.factions.GetEnemyFaction();
+        //            if (num == -1)
+        //            {
+        //                num2 += 20 + __instance.currSector.GetHideoutQuantity(HideoutType.Marauder, true) * 15;
+        //            }
+        //            if (__instance.currSector.type == SectorType.ShipGraveyard)
+        //            {
+        //                num2 += 20;
+        //            }
+        //        }
+        //        if (__instance.currSector.factionControl == 0)
+        //        {
+        //            num2 += __instance.currSector.GetHideoutQuantity(HideoutType.Marauder, true) * 12;
+        //        }
+        //        if (__instance.currSector.factionControl > 0)
+        //        {
+        //            num2 -= 10;
+        //            if (num2 < 0)
+        //            {
+        //                num2 = 0;
+        //            }
+        //            num2 += __instance.currSector.GetHideoutQuantity(HideoutType.Marauder, true) * 5;
+        //        }
+        //        if (num == -1 && UnityEngine.Random.Range(1, 101) <= num2)
+        //        {
+        //            num = 0;
+        //        }
+        //    }
+        //    if (num == -1)
+        //    {
+        //        __instance.spawnEnemyTime = 120f;
+        //        return false;
+        //    }
+        //    int num3 = PChar.Char.level - __instance.currSector.level;
+        //    if (PChar.Char.level < __instance.currSector.level)
+        //    {
+        //        num3 /= 2;
+        //    }
+        //    int num4 = (int)(PChar.SKMod(16) * 5f);
+        //    int num5 = CfgMaxLevel.Value - num3 * 5 - num4;
+        //    int num6 = num5 - CfgMaxLevel.Value;
+        //    num5 += __instance.spawnEnemyPlusChance;
+        //    num5 += ((bounty > 0) ? bounty : (bounty * 2));
+        //    if (UnityEngine.Random.Range(1, 101) <= num5)
+        //    {
+        //        __instance.spawnEnemyTime = (float)(200 - num6);
+        //        __instance.spawnEnemyPlusChance = 2;
+        //        if (__instance.spawnEnemyTime < 120f)
+        //        {
+        //            __instance.spawnEnemyTime = 120f;
+        //        }
 
-                num = +2;
-                __instance.StartCoroutine(__instance.CreateEnemyRoutine(spawnInterval, num));
-                __instance.StartCoroutine(__instance.CreateEnemyRoutine(spawnInterval - UnityEngine.Random.Range(0f, 20f), num));
-                Debug.LogWarning($"PluginName: {PluginName}, Enhanced Create Enemy {bounty}, {num3}, {num4}, {num5}, {num6}, {spawnInterval}, {num}");
-                return false;
-            }
-            __instance.spawnEnemyTime = 30f;
-            __instance.spawnEnemyPlusChance += 5;
-            if (PChar.GetRepRank(__instance.currSector.factionControl) > -3 && __instance.spawnEnemyPlusChance > CfgMaxLevel.Value - num4)
-            {
-                __instance.spawnEnemyPlusChance = (CfgMaxLevel.Value + 40) - num4;
+        //        num = +2;
+        //        __instance.StartCoroutine(__instance.CreateEnemyRoutine(spawnInterval, num));
+        //        __instance.StartCoroutine(__instance.CreateEnemyRoutine(spawnInterval - UnityEngine.Random.Range(0f, 20f), num));
+        //        Debug.LogWarning($"PluginName: {PluginName}, Enhanced Create Enemy {bounty}, {num3}, {num4}, {num5}, {num6}, {spawnInterval}, {num}");
+        //        return false;
+        //    }
+        //    __instance.spawnEnemyTime = 30f;
+        //    __instance.spawnEnemyPlusChance += 5;
+        //    if (PChar.GetRepRank(__instance.currSector.factionControl) > -3 && __instance.spawnEnemyPlusChance > CfgMaxLevel.Value - num4)
+        //    {
+        //        __instance.spawnEnemyPlusChance = (CfgMaxLevel.Value + 40) - num4;
 
-            }
-            return false;
-        }
+        //    }
+        //    return false;
+        //}
 
 
         [HarmonyPatch(typeof(GameManager), "Update")]
@@ -200,9 +210,9 @@ namespace JPEAK_SV_unlockLevelCapTo60
             {
                 aIControl.Char.pilotLevel = PChar.Char.level + 10;
                 aIControl.Char.level = PChar.Char.level + UnityEngine.Random.Range(0, 5);
-                aIss.armorMod = 13f + UnityEngine.Random.Range(0f, 5f);
-                aIss.DamageResist(6 + UnityEngine.Random.Range(1, 3));
-                aIss.dmgBonus = UnityEngine.Random.Range(0, 8);
+                aIss.armorMod = CfgDefense.Value * (13f + UnityEngine.Random.Range(0f, 5f));
+                aIss.DamageResist((int)CfgDefense.Value * (6 + UnityEngine.Random.Range(1, 3)));
+                aIss.dmgBonus = CfgDamage.Value * UnityEngine.Random.Range(0, 8);
                 //aIss.AIControl.Update();
                 shipobj.gameObject.SetActive(true);
                 aIControl.SearchForEnemies();
@@ -255,10 +265,10 @@ namespace JPEAK_SV_unlockLevelCapTo60
                 __instance.AIType = 4;
                 __instance.level = PChar.Char.level + UnityEngine.Random.Range(3, 10);
                 __instance.rank = 2;
-                __instance.fighterPilot = Mathf.Clamp(__instance.level, PChar.Char.level - 10, PChar.Char.level +10);
-                __instance.fleetCommander = Mathf.Clamp(__instance.level, PChar.Char.level - 10, PChar.Char.level + 10);
-                __instance.pilotLevel = Mathf.Clamp(__instance.level, PChar.Char.level - 10, PChar.Char.level + 10);
-                __instance.gunnerLevel = Mathf.Clamp(__instance.level, PChar.Char.level - 10, PChar.Char.level + 10);
+                __instance.fighterPilot = Mathf.Clamp(__instance.level, PChar.Char.level - 3, PChar.Char.level +10);
+                __instance.fleetCommander = Mathf.Clamp(__instance.level, PChar.Char.level - 3, PChar.Char.level + 10);
+                __instance.pilotLevel = Mathf.Clamp(__instance.level, PChar.Char.level - 3, PChar.Char.level + 10);
+                __instance.gunnerLevel = Mathf.Clamp(__instance.level, PChar.Char.level - 3, PChar.Char.level + 10);
                 
                 __instance.ignoreAsteroidObstacles = true;
                 __instance.ignoreSpaceshipObstacles = true;
@@ -276,8 +286,8 @@ namespace JPEAK_SV_unlockLevelCapTo60
                     __instance.shipData = new SpaceShipData();
                 }
                 __instance.shipData.shipModelID = randomModel.id;
-                __instance.shipData.HPbase *= 5 + UnityEngine.Random.Range(0f, 2f);
-                __instance.shipData.shieldBase *= 2f+ UnityEngine.Random.Range(0f, 1.5f);
+                __instance.shipData.HPbase *= CfgDefense.Value * UnityEngine.Random.Range(1f, 5f);
+                __instance.shipData.shieldBase *= CfgDefense.Value * (2f + UnityEngine.Random.Range(0f, 3.5f));
                 __instance.guardians = new List<AIMercenaryCharacter>();
                 int num2 = (PChar.Char.level) / 12;
                 for (int i = 0; i < num2; i++)
@@ -290,13 +300,13 @@ namespace JPEAK_SV_unlockLevelCapTo60
                     aIMercenaryCharacter.pilotLevel = Mathf.Clamp(__instance.level, PChar.Char.level - 10, PChar.Char.level);
                     aIMercenaryCharacter.gunnerLevel = Mathf.Clamp(__instance.level, PChar.Char.level - 10, PChar.Char.level);
                     aIMercenaryCharacter.fighterPilot = Mathf.Clamp(__instance.level, PChar.Char.level - 10, PChar.Char.level);
-                    aIMercenaryCharacter.shipData.HPbase *= 3f;
+                    aIMercenaryCharacter.shipData.HPbase *= CfgDefense.Value * (2f + UnityEngine.Random.Range(0f, 3.5f));
                     aIMercenaryCharacter.rank = 2 + UnityEngine.Random.Range(0, 1);
                     
                     __instance.guardians.Add(aIMercenaryCharacter);
                 
-                    __instance.guardians[i].shipData.shieldBase *= 4f + UnityEngine.Random.Range(0f, 1.5f);
-                    __instance.guardians[i].shipDmgToleranceMod = 2f + UnityEngine.Random.Range(0f, 1.5f);         }
+                    __instance.guardians[i].shipData.shieldBase *= CfgDefense.Value * (2f + UnityEngine.Random.Range(0f, 3.5f));
+                    __instance.guardians[i].shipDmgToleranceMod = CfgDefense.Value * (2f + UnityEngine.Random.Range(0f, 3.5f));       }
                 Debug.LogWarning($"PluginName: {PluginName}, Enahnced RAVANGER BOSS!!!");
                 return false;
             }
@@ -334,9 +344,9 @@ namespace JPEAK_SV_unlockLevelCapTo60
                         gameObject.GetComponent<AIMarauder>().Char.gunnerLevel = aiChar.gunnerLevel + 10;
                         gameObject.GetComponent<AIMarauder>().Char.fighterPilot = aiChar.fighterPilot + 10;
                         gameObject.GetComponent<AIMarauder>().Char.fleetCommander = aiChar.fleetCommander + 10;
-                        gameObject.GetComponent<AIMarauder>().Char.shipData.HPbase *= 3f;
-                        gameObject.GetComponent<AIMarauder>().Char.shipData.shieldBase *= 4f;
-                        gameObject.GetComponent<AIMarauder>().Char.shipDmgToleranceMod = 2f + UnityEngine.Random.Range(0f, 1.5f);
+                        gameObject.GetComponent<AIMarauder>().Char.shipData.HPbase *= CfgDefense.Value * (4f + UnityEngine.Random.Range(0f, 3.5f));
+                        gameObject.GetComponent<AIMarauder>().Char.shipData.shieldBase *= CfgDefense.Value * (4f + UnityEngine.Random.Range(0f, 3.5f));
+                        gameObject.GetComponent<AIMarauder>().Char.shipDmgToleranceMod = CfgDefense.Value * (3f + UnityEngine.Random.Range(0f, 4.5f));
                         gameObject.GetComponent<AIMarauder>().Char.rank = 2 + UnityEngine.Random.Range(0, 1);
 
                         gameObject.GetComponent<AIMarauder>().hc = hc;
